@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Dropout Prediction & Counselling</title>
+  <!-- Existing CSS styles -->
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      background: #f4f7f9;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background: #4A90E2;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    header h1 { font-size: 1.8rem; }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+      padding: 1.5rem;
+    }
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    h2 { margin-bottom: 1rem; color: #4A90E2; }
+    form label {
+      display: block;
+      margin: 0.5rem 0 0.2rem;
+      font-weight: bold;
+    }
+    form input, form select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    form button {
+      padding: 0.7rem 1.2rem;
+      background: #4A90E2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    form button:hover { background: #357ABD; }
+    /* Style for the Download button (same style as form buttons) */
+    #downloadPdf {
+      margin-top: 0.5rem;
+      padding: 0.7rem 1.2rem;
+      background: #4A90E2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    #downloadPdf:hover { background: #357ABD; }
+    #predictionResult {
+      margin-top: 1rem;
+      font-weight: bold;
+      color: #222;
+    }
+    #riskBar {
+      margin-top: 0.5rem;
+      height: 20px;
+      width: 100%;
+      background: #eee;
+      border-radius: 12px;
+      overflow: hidden;
+      display: none;
+    }
+    #riskProgress {
+      height: 100%;
+      width: 0;
+      transition: width 0.6s ease-in-out;
+    }
+    #suggestionsBox {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 12px;
+      background: #f0f8ff;
+      border-left: 6px solid #4A90E2;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      display: none;
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    #suggestionsBox h3 { margin-bottom: 0.5rem; color: #4A90E2; }
+    #suggestionsList li {
+      background: #eaf4ff;
+      margin: 0.3rem 0;
+      padding: 0.5rem;
+      border-radius: 6px;
+      list-style: none;
+    }
+    #resourcesList {
+      margin-top: 0.5rem;
+      padding-left: 1.2rem;
+    }
+    #resourcesList li a {
+      color: #357ABD;
+      text-decoration: none;
+    }
+    #resourcesList li a:hover { text-decoration: underline; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #chatbot { display: flex; flex-direction: column; height: 500px; }
+    #chatbot-messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 0.8rem;
+      margin-bottom: 0.5rem;
+      background: #fafafa;
+    }
+    .msg {
+      margin-bottom: 0.5rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: 8px;
+      max-width: 80%;
+    }
+    .user-msg { background: #e0f0ff; align-self: flex-end; text-align: right; }
+    .bot-msg { background: #f1f1f1; align-self: flex-start; }
+    #chatbot-input { display: flex; gap: 0.5rem; }
+    #chatbot-input input {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    #chatbot-input button {
+      padding: 0.5rem 1rem;
+      background: #4A90E2;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+    }
+    #chatbot-input button:hover { background: #357ABD; }
+    footer {
+      background: #4A90E2;
+      color: white;
+      text-align: center;
+      padding: 1rem;
+    }
+    @media(max-width: 900px) { main { grid-template-columns: 1fr; } }
+    @media(max-width: 600px) {
+      header h1 { font-size: 1.4rem; }
+      #chatbot { height: 350px; }
+    }
+  </style>
+  <!-- Include HTML2PDF library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>AI BASED DROPOUT PREDICTION AND COUSELLING SYSTEM</h1>
+    <h4>IIMT COLLEGE OF ENGINEERING, GREATER NOIDA (UP)</h4>
+  </header>
+
+  <main>
+    <!-- Prediction Form -->
+    <div class="card">
+      <h2>FILL THE FORM FOR PREDICTION</h2>
+      <h4>***Every entry is mandatory.</h4>
+      <form id="predictionForm">
+        <label for="name">Student Name</label>
+        <input type="text" id="name" required placeholder="CHANDRAKANT SINGH">
+        <label for="age">Age</label>
+        <input type="number" id="age" required>
+        <label for="performance">Academic Performance</label>
+        <select id="performance" required>
+          <option value="">Select</option>
+          <option value="excellent">Excellent</option>
+          <option value="good">Good</option>
+          <option value="average">Average</option>
+          <option value="poor">Poor</option>
+        </select>
+        <label for="attendance">Attendance (%)</label>
+        <input type="number" id="attendance" required>
+        <label for="support">Family Support</label>
+        <select id="support" required>
+          <option value="">Select</option>
+          <option value="strong">Strong</option>
+          <option value="moderate">Moderate</option>
+          <option value="weak">Weak</option>
+        </select>
+        <label for="finance">Financial Stress</label>
+        <select id="finance" required>
+          <option value="">Select</option>
+          <option value="none">None</option>
+          <option value="moderate">Moderate</option>
+          <option value="high">High</option>
+        </select>
+        <label for="mental">Mental Health</label>
+        <select id="mental" required>
+          <option value="">Select</option>
+          <option value="stable">Stable</option>
+          <option value="mild issues">Mild Issues</option>
+          <option value="serious issues">Serious Issues</option>
+        </select>
+        <label for="extra">Extracurricular Participation</label>
+        <select id="extra" required>
+          <option value="">Select</option>
+          <option value="active">Active</option>
+          <option value="sometimes">Sometimes</option>
+          <option value="none">None</option>
+        </select>
+        <label for="discipline">Disciplinary Issues</label>
+        <select id="discipline" required>
+          <option value="">Select</option>
+          <option value="none">None</option>
+          <option value="minor">Minor</option>
+          <option value="serious">Serious</option>
+        </select>
+        <button type="submit">Predict</button>
+      </form>
+      <p id="predictionResult"></p>
+      <div id="riskBar"><div id="riskProgress"></div></div>
+      <div id="suggestionsBox">
+        <h3>Personalized Suggestions</h3>
+        <ul id="suggestionsList"></ul>
+        <h3>Helpful Resources</h3>
+        <ul id="resourcesList"></ul>
+      </div>
+    </div>
+
+    <!-- Chatbot -->
+    <div class="card" id="chatbot">
+      <h2>AI Counsellor Chatbot</h2>
+      <div id="chatbot-messages"></div>
+      <div id="chatbot-input">
+        <input type="text" id="chatbotText" placeholder="Ask me anything...">
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="startVoice()">🎤 Speak</button>
+      </div>
+      <!-- Download PDF button to capture both prediction and chat -->
+      <button id="downloadPdf">Download PDF</button>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 AI Dropout Prediction & Counselling | Built by CHANDRAKANT SINGH AND TEAM.</p>
+  </footer>
+
+  <script>
+    // Prediction Form Logic (unchanged except for minor formatting)
+    const form = document.getElementById('predictionForm');
+    const predictionResult = document.getElementById('predictionResult');
+    const riskBar = document.getElementById('riskBar');
+    const riskProgress = document.getElementById('riskProgress');
+    const suggestionsBox = document.getElementById('suggestionsBox');
+    const suggestionsList = document.getElementById('suggestionsList');
+    const resourcesList = document.getElementById('resourcesList');
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const age = document.getElementById('age').value;
+      const performance = document.getElementById('performance').value;
+      const attendance = parseInt(document.getElementById('attendance').value);
+      const support = document.getElementById('support').value;
+      const finance = document.getElementById('finance').value;
+      const mental = document.getElementById('mental').value;
+      const extra = document.getElementById('extra').value;
+      const discipline = document.getElementById('discipline').value;
+
+      let risk = "✅ Low risk of dropout.";
+      let riskLevel = 20;
+      let riskColor = "green";
+      let suggestions = [];
+      let resources = [];
+
+      // High Risk
+      if(performance === "poor" || attendance < 50 || support === "weak" || finance === "high" || mental === "serious issues" || extra === "none" || discipline === "serious"){
+        risk = "⚠️ High risk of dropout. Immediate counselling recommended.";
+        riskLevel = 90;
+        riskColor = "red";
+        suggestions.push("Work on weak subjects with extra coaching.");
+        if(attendance < 50) suggestions.push("Increase attendance above 75%.");
+        if(support === "weak") suggestions.push("Seek mentor/peer support.");
+        if(finance === "high") suggestions.push("Apply for scholarships or part-time jobs.");
+        if(mental === "serious issues") suggestions.push("Consult a professional counsellor urgently.");
+        if(extra === "none") suggestions.push("Join extracurriculars to build confidence.");
+        if(discipline === "serious") suggestions.push("Resolve disciplinary issues with mentor guidance.");
+        resources.push('<a href="https://findahelpline.com" target="_blank">☎️ Mental Health Helplines</a>');
+        resources.push('<a href="https://internshala.com" target="_blank">💼 Internshala (Jobs & Internships)</a>');
+        resources.push('<a href="https://www.coursera.org" target="_blank">📘 Coursera (Courses)</a>');
+      }
+      // Moderate Risk
+      else if(performance === "average" || attendance < 75 || support === "moderate" || finance === "moderate" || mental === "mild issues" || extra === "sometimes" || discipline === "minor"){
+        risk = "⚠️ Moderate risk of dropout. Counselling advised.";
+        riskLevel = 60;
+        riskColor = "orange";
+        if(performance === "average") suggestions.push("Improve study habits with Pomodoro.");
+        if(attendance < 75) suggestions.push("Attend classes regularly.");
+        if(support === "moderate") suggestions.push("Engage in group study.");
+        if(finance === "moderate") suggestions.push("Plan finances & seek scholarships.");
+        if(mental === "mild issues") suggestions.push("Practice meditation & stress relief.");
+        if(extra === "sometimes") suggestions.push("Be more consistent in extracurriculars.");
+        if(discipline === "minor") suggestions.push("Improve discipline with mentor feedback.");
+        resources.push('<a href="https://www.khanacademy.org" target="_blank">📘 Khan Academy</a>');
+        resources.push('<a href="https://www.calm.com" target="_blank">🧘 Calm (Relaxation)</a>');
+        resources.push('<a href="https://www.scholarships.com" target="_blank">🎓 Scholarships.com</a>');
+      }
+
+      predictionResult.innerText = "Prediction: " + risk;
+
+      // Show Risk Bar
+      riskBar.style.display = "block";
+      riskProgress.style.width = riskLevel + "%";
+      riskProgress.style.background = riskColor;
+
+      // Show suggestions
+      suggestionsList.innerHTML = "";
+      resourcesList.innerHTML = "";
+      if(suggestions.length > 0){
+        suggestions.forEach(s => {
+          let li = document.createElement("li");
+          li.innerText = s;
+          suggestionsList.appendChild(li);
+        });
+        resources.forEach(r => {
+          let li = document.createElement("li");
+          li.innerHTML = r;
+          resourcesList.appendChild(li);
+        });
+        suggestionsBox.style.display = "block";
+      } else {
+        suggestionsBox.style.display = "none";
+      }
+    });
+
+    // Chatbot Logic with Memory & Voice
+    const chatbotMessages = document.getElementById('chatbot-messages');
+    let chatHistory = [];
+
+    function appendMessage(sender, message, className) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = "msg " + className;
+      msgDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+      chatbotMessages.appendChild(msgDiv);
+      chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    }
+
+    function getBotResponse(userText) {
+      const text = userText.toLowerCase();
+      let response = "";
+      chatHistory.push(text);
+      if (chatHistory.length > 5) chatHistory.shift();
+
+      // [Bots response logic as given...]
+      if(text.includes("study") || text.includes("tips")){
+        return "📘 Try breaking topics into small chunks, use active recall (flashcards, self-quizzing), and revise regularly.";
+      } else if(text.includes("exam") || text.includes("test")){
+        return "✏️ Stay calm during exams. Revise key topics, solve old question papers, and get proper rest the night before.";
+      } else if(text.includes("attendance")){
+        return "📅 Try to keep your attendance above 75%. Regular participation improves both learning and your confidence.";
+      } else if(text.includes("focus") || text.includes("concentrate")){
+        return "🎯 Use techniques like Pomodoro (25 min focus + 5 min break), study in distraction-free zones, and avoid multitasking.";
+      } else if(text.includes("resources") || text.includes("material")){
+        return "🌐 You can try Coursera, edX, Khan Academy, or your university’s library portal for free resources.";
+      } else if(text.includes("teacher") || text.includes("professor")){
+        return "👩‍🏫 Teachers and mentors are great resources. Don’t hesitate to ask questions—they appreciate engaged students.";
+      } else if(text.includes("hi") || text.includes("hello")){
+        return "👩‍🏫 Hello how may i help you, i am keyword search based chatbot so please ask me using keywords like stress, motivation, focus and many more.";
+
+      } else if(text.includes("stress") || text.includes("anxiety")){
+        return "💆 It’s normal to feel stressed. Try meditation, deep breathing, or a short walk. If stress persists, talk to a mentor.";
+      } else if(text.includes("motivate") || text.includes("motivation")){
+        return "🌟 Remember your goals! Each small step counts. Success is not instant—stay consistent and positive!";
+      } else if(text.includes("depressed") || text.includes("sad")){
+        return "💙 I’m sorry you feel this way. Please talk to someone you trust, a teacher, or a counsellor. You are not alone.";
+      } else if(text.includes("lonely") || text.includes("friends")){
+        return "🤝 Join a study group or campus club. Building connections can make you feel supported and less isolated.";
+      } else if(text.includes("mental health")){
+        return "🧠 Mental health is as important as physical health. Consider journaling, counselling, or mindfulness apps.";
+
+      } else if(text.includes("sleep") || text.includes("tired")){
+        return "😴 Aim for 7–8 hours of sleep. Proper rest improves focus, memory, and mood.";
+      } else if(text.includes("diet") || text.includes("food")){
+        return "🥗 Balanced meals with fruits, vegetables, and proteins fuel your brain for better learning.";
+      } else if(text.includes("exercise") || text.includes("workout")){
+        return "🏃 Regular exercise reduces stress and boosts concentration. Even a 20-minute walk helps a lot.";
+      } else if(text.includes("time management") || text.includes("schedule")){
+        return "📖 Plan your day with priority tasks. Use planners or digital apps (Google Calendar, Notion) to stay organized.";
+
+      } else if(text.includes("career") || text.includes("future")){
+        return "💼 Think about your interests. Explore internships, workshops, or skill courses. Networking helps too!";
+      } else if(text.includes("skills") || text.includes("courses")){
+        return "💡 Skills like coding, communication, data analysis, and problem-solving are highly valued. Platforms like Udemy or Coursera can help.";
+      } else if(text.includes("jobs") || text.includes("internship")){
+        return "🔎 Start with LinkedIn, Internshala, or your university placement cell. Small projects can also build experience.";
+
+      } else if(text.includes("financial") || text.includes("money")){
+        return "💰 Many institutions have scholarships or support funds. Reach out to your student affairs office for help.";
+      } else if(text.includes("counsellor") || text.includes("counselling")){
+        return "📞 Speaking to a professional counsellor can provide personalized strategies. Would you like me to suggest online resources?";
+      } else if(text.includes("suicide") || text.includes("self harm")){
+        return "⚠️ I care about your safety. Please reach out immediately to a trusted person, counsellor, or local helpline.";
+
+      } else if(text.includes("hello") || text.includes("hi")){
+        return "👋 Hello! I’m your CounsellorBot. How are you feeling today?";
+      } else if(text.includes("thanks") || text.includes("thank you")){
+        return "😊 You’re most welcome! I’m glad I could help.";
+      }
+
+      if (chatHistory.includes("exam") && text.includes("stress")) {
+        response += " 📚 Since you mentioned exams earlier, try mock tests.";
+      }
+      return response;
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chatbotText');
+      const text = input.value.trim();
+      if (text) {
+        appendMessage("You", text, "user-msg");
+        input.value = "";
+        setTimeout(() => {
+          const botReply = getBotResponse(text);
+          appendMessage("CounsellorBot", botReply, "bot-msg");
+          speak(botReply);
+        }, 700);
+      }
+    }
+
+    function startVoice() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-US";
+      recognition.start();
+      recognition.onresult = function(event) {
+        const voiceText = event.results[0][0].transcript;
+        document.getElementById("chatbotText").value = voiceText;
+        sendMessage();
+      };
+    }
+
+    function speak(message) {
+      const speech = new SpeechSynthesisUtterance(message);
+      speech.lang = "en-US";
+      window.speechSynthesis.speak(speech);
+    }
+
+    // PDF Download Logic
+    document.getElementById("downloadPdf").addEventListener("click", function() {
+      // Gather form values
+      const name = document.getElementById('name').value || "N/A";
+      const age = document.getElementById('age').value || "N/A";
+      const performance = document.getElementById('performance').value || "N/A";
+      const attendance = document.getElementById('attendance').value || "N/A";
+      const support = document.getElementById('support').value || "N/A";
+      const finance = document.getElementById('finance').value || "N/A";
+      const mental = document.getElementById('mental').value || "N/A";
+      const extra = document.getElementById('extra').value || "N/A";
+      const discipline = document.getElementById('discipline').value || "N/A";
+      const predictionText = predictionResult.innerText || "N/A";
+
+      // Collect suggestions (if any)
+      let suggestions = [];
+      suggestionsList.querySelectorAll('li').forEach(li => {
+        suggestions.push(li.innerText);
+      });
+
+      // Collect resources text (if any)
+      let resources = [];
+      resourcesList.querySelectorAll('li').forEach(li => {
+        // Get link text or fallback
+        resources.push(li.innerText);
+      });
+
+      // Collect chat messages
+      let chatMessages = [];
+      chatbotMessages.querySelectorAll('.msg').forEach(msg => {
+        chatMessages.push(msg.innerText);
+      });
+
+      // Build a hidden container for PDF content
+      let pdfContent = document.createElement('div');
+      pdfContent.style.padding = '20px';
+      pdfContent.innerHTML = `
+        <h2>Student Dropout Prediction Report</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Age:</strong> ${age}</p>
+        <p><strong>Academic Performance:</strong> ${performance}</p>
+        <p><strong>Attendance (%):</strong> ${attendance}</p>
+        <p><strong>Family Support:</strong> ${support}</p>
+        <p><strong>Financial Stress:</strong> ${finance}</p>
+        <p><strong>Mental Health:</strong> ${mental}</p>
+        <p><strong>Extracurricular Participation:</strong> ${extra}</p>
+        <p><strong>Disciplinary Issues:</strong> ${discipline}</p>
+        <h3>Prediction:</h3>
+        <p>${predictionText}</p>
+      `;
+      if (suggestions.length > 0) {
+        pdfContent.innerHTML += `<h3>Personalized Suggestions:</h3><ul>${suggestions.map(s => `<li>${s}</li>`).join('')}</ul>`;
+      }
+      if (resources.length > 0) {
+        pdfContent.innerHTML += `<h3>Helpful Resources:</h3><ul>${resources.map(r => `<li>${r}</li>`).join('')}</ul>`;
+      }
+      if (chatMessages.length > 0) {
+        pdfContent.innerHTML += `<h3>Chat Transcript:</h3><ul>${chatMessages.map(cm => `<li>${cm}</li>`).join('')}</ul>`;
+      }
+
+      // Generate and save PDF using html2pdf (client-side):contentReference[oaicite:3]{index=3}
+      html2pdf()
+        .set({ margin: 1, filename: 'Student_Report.pdf', html2canvas: { scale: 2 } })
+        .from(pdfContent)
+        .save();
+    });
+  </script>
+</body>
+</html>
